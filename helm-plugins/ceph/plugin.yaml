@@ -1,0 +1,6 @@
+name: "ceph"
+version: "0.1.0"
+usage: "Setup Ceph"
+description: |-
+  This pulgin sets up Ceph for deployment
+command: "$HELM_PLUGIN_DIR/ceph"

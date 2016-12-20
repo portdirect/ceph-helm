@@ -1,0 +1,180 @@
+#!/bin/bash
+
+set -eu
+
+usage() {
+cat << EOF
+Ceph integration with Helm
+
+Available Commands:
+  secret       Generate Config Secrets
+  labelnode    Label nodes for Ceph OSD deployment
+  activate     Setup client secrets for a k8s namespace
+EOF
+}
+
+secret_usage() {
+cat << EOF
+Generate Ceph Secrets for an namespace
+
+You need to also enter the CIDRs of the cluster and
+public network as arguments to this command.
+
+Example:
+    $ helm ceph secret <namespace> <osd_cluster_network> <osd_public_network>
+
+
+EOF
+}
+
+labelnode_usage() {
+cat << EOF
+Label the nodes that will take part in the ceph cluster
+ * 'all' labels all nodes in the cluster bar the k8s controller node(s)
+
+Example:
+    $ helm ceph labelnode all
+    $ helm ceph labelnode <foo>
+
+EOF
+}
+
+activate_namespace_usage() {
+cat << EOF
+Setup client credentials for a namespace
+
+Example:
+    $ helm ceph activate <namespace>
+
+EOF
+}
+
+is_help() {
+  case "$1" in
+  "-h")
+    return 0
+    ;;
+  "--help")
+    return 0
+    ;;
+  "help")
+    return 0
+    ;;
+  *)
+    return 1
+    ;;
+esac
+}
+
+secret_gen() {
+  if is_help $1 ; then
+    secret_usage
+    return
+  fi
+  kube_namespace=$1
+  osd_cluster_network=$2
+  osd_public_network=$3
+
+  kubectl get namespace ${kube_namespace} || kubectl create namespace ${kube_namespace}
+  ( docker run --rm \
+      -e osd_cluster_network=$osd_cluster_network \
+      -e osd_public_network=$osd_public_network \
+      docker.io/gantry/ceph:latest | kubectl --namespace ${kube_namespace} create -f - ) || true
+}
+
+
+label_node() {
+  if is_help $1 ; then
+    label_node_usage
+    return
+  fi
+  kube_node=$1
+
+  if [[ "${kube_node}" == "all" ]]; then
+    echo "labeling all nodes"
+    kubectl get nodes -L kubeadm.alpha.kubernetes.io/role --no-headers | awk '$NF ~ /^<none>/ { print $1}' | while read NODE ; do
+      kubectl label node $NODE --overwrite ceph-storage=enabled
+    done
+  else
+    echo "label node ${kube_node}"
+    kubectl label node ${kube_node} --overwrite ceph-storage=enabled
+  fi
+}
+
+activate_namespace() {
+  if is_help $1 ; then
+    activate_namespace_usage
+    return
+  fi
+  kube_namespace=$1
+  {
+  cat <<EOF
+apiVersion: v1
+kind: Secret
+metadata:
+  name: "pvc-ceph-client-key"
+type: kubernetes.io/rbd
+data:
+  key: |
+    $(kubectl get secret ceph-client-key --namespace=ceph -o json | jq -r '.data | .[]')
+EOF
+  } | kubectl create --namespace ${kube_namespace} -f -
+}
+
+
+if [[ $# < 1 ]]; then
+  usage
+  exit 1
+fi
+
+if ! type "docker" > /dev/null; then
+  echo "Command like 'docker' client must be installed"
+  exit 1
+fi
+
+if ! type "kubectl" > /dev/null; then
+  echo "Command like 'kubectl' client must be installed"
+  exit 1
+fi
+
+case "${1:-"help"}" in
+  "secret"):
+    if [[ $# < 4 ]]; then
+      secret_usage
+      echo "Error: Chart package required."
+      exit 1
+    fi
+    secret_gen $2 $3 $4
+    ;;
+  "labelnode"):
+    if [[ $# < 2 ]]; then
+      labelnode_usage
+      echo "Error: Chart package required."
+      exit 1
+    fi
+    label_node $2
+    ;;
+  "activate"):
+    if [[ $# < 2 ]]; then
+      activate_namespace_usage
+      echo "Error: Chart package required."
+      exit 1
+    fi
+    activate_namespace $2
+    ;;
+  "help")
+    usage
+    ;;
+  "--help")
+    usage
+    ;;
+  "-h")
+    usage
+    ;;
+  *)
+    usage
+    exit 1
+    ;;
+esac
+
+exit 0
