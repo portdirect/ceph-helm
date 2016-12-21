@@ -1,32 +1,23 @@
 images:
   daemon: docker.io/ceph/daemon:latest
 
+image_policy:
+  pull: Always
+
 labels:
   node_selector_key: ceph-storage
   node_selector_value: enabled
 
-network:
-  port:
-    mon: 6789
+service:
+  mon:
+    name: ceph-mon
+    port: 6789
 
-storage:
-  osd_directory: /var/lib/harbor/ceph/osd
-  var_directory: /var/lib/harbor/ceph/ceph
-
-# if you change provision_storage_class to false
-# it is presumed you manage your own storage
-# class definition externally
-storageclass:
-  provision_storage_class: true
-  name: general
-  monitors: ceph-mon.ceph
-  pool: rbd
-  admin_id: admin
-  admin_secret_name: pvc-ceph-conf-combined-storageclass
-  admin_secret_namespace: ceph
-  user_id: admin
-  user_secret_name: pvc-ceph-client-key
-
+ceph:
+  cluster: "ceph"
+  storage:
+    osd_directory: /var/lib/ceph-helm/ceph/osd
+    var_directory: /var/lib/ceph-helm/ceph/ceph
 
 resources:
   osd:
@@ -37,6 +28,7 @@ resources:
       memory: "1024Mi"
       cpu: "2000m"
   mds:
+    replicas: 1
     requests:
       memory: "10Mi"
       cpu: "250m"
@@ -44,6 +36,7 @@ resources:
       memory: "50Mi"
       cpu: "500m"
   mon:
+    replicas: 3
     requests:
       memory: "50Mi"
       cpu: "1000m"
@@ -57,3 +50,11 @@ resources:
     limits:
       memory: "50Mi"
       cpu: "500m"
+
+storageclass:
+  name: general
+  pool: rbd
+  admin_id: admin
+  admin_secret_name: pvc-ceph-conf-combined-storageclass
+  user_id: admin
+  user_secret_name: pvc-ceph-client-key

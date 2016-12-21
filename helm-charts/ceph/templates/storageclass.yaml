@@ -5,10 +5,10 @@ metadata:
     name: {{ .Values.storageclass.name }}
 provisioner: kubernetes.io/rbd
 parameters:
-    monitors: {{ .Values.storageclass.monitors }}:{{ .Values.network.port.mon }}
+    monitors: {{ .Values.service.mon.name }}.{{ .Release.Namespace }}:{{ .Values.service.mon.port }}
     adminId: {{ .Values.storageclass.admin_id }}
     adminSecretName: {{ .Values.storageclass.admin_secret_name }}
-    adminSecretNamespace:  {{ .Values.storageclass.admin_secret_namespace }}
+    adminSecretNamespace: {{ .Release.Namespace }}
     pool: {{ .Values.storageclass.pool }}
     userId: {{ .Values.storageclass.user_id }}
     userSecretName: {{ .Values.storageclass.user_secret_name }}

@@ -24,7 +24,7 @@ helm ceph secret ceph 192.168.0.0/16 192.168.0.0/16 # Default CIDR Range for Cal
 helm ceph labelnode all
 
 #Deploy ceph to the namespace setup above
-helm install marina/ceph --namespace ceph
+helm install marina/ceph --namespace ceph  --dry-run --debug
 
 #Setup client credentials for a namespace
 helm ceph activate default

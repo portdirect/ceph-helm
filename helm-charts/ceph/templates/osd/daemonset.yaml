@@ -6,24 +6,31 @@ metadata:
   labels:
     app: ceph
     daemon: osd
+    release: {{ .Release.Name }}
 spec:
   template:
     metadata:
       labels:
         app: ceph
         daemon: osd
+        release: {{ .Release.Name }}
     spec:
       nodeSelector:
         {{ .Values.labels.node_selector_key }}: {{ .Values.labels.node_selector_value }}
       containers:
-        - name: osd-pod
+        - name: main
           image: {{ .Values.images.daemon }}
-          imagePullPolicy: Always
+          imagePullPolicy: {{ .Values.image_policy.pull }}
           volumeMounts:
             - name: devices
               mountPath: /dev
+              readOnly: false
             - name: ceph
               mountPath: /var/lib/ceph
+              readOnly: false
+            - name: osd-directory
+              mountPath: /var/lib/ceph/osd
+              readOnly: false
             - name: ceph-conf
               mountPath: /etc/ceph/ceph.conf
               subPath: ceph.conf
@@ -37,16 +44,16 @@ spec:
               subPath: ceph.mon.keyring
               readOnly: true
             - name: ceph-bootstrap-osd-keyring
-              mountPath: /var/lib/ceph/bootstrap-osd
+              mountPath: /var/lib/ceph/bootstrap-osd/ceph.keyring
+              subPath: ceph.keyring
               readOnly: true
             - name: ceph-bootstrap-mds-keyring
-              mountPath: /var/lib/ceph/bootstrap-mds
+              mountPath: /var/lib/ceph/bootstrap-mds/ceph.keyring
+              subPath: ceph.keyring
               readOnly: true
             - name: ceph-bootstrap-rgw-keyring
-              mountPath: /var/lib/ceph/bootstrap-rgw
-              readOnly: true
-            - name: osd-directory
-              mountPath: /var/lib/ceph/osd
+              mountPath: /var/lib/ceph/bootstrap-rgw/ceph.keyring
+              subPath: ceph.keyring
               readOnly: true
           securityContext:
             privileged: true
@@ -56,7 +63,7 @@ spec:
             - name: KV_TYPE
               value: k8s
             - name: CLUSTER
-              value: ceph
+              value: {{ .Values.ceph.cluster }}
             - name: CEPH_GET_ADMIN_KEY
               value: "1"
           livenessProbe:
@@ -82,7 +89,7 @@ spec:
         - name: ceph
           emptyDir: {}
 #          hostPath:
-#            path: {{ .Values.storage.var_directory }}
+#            path: {{ .Values.ceph.storage.var_directory }}
         - name: ceph-conf
           configMap:
             name: ceph-conf
@@ -104,4 +111,4 @@ spec:
         - name: osd-directory
           emptyDir: {}
 #          hostPath:
-#            path: {{ .Values.storage.osd_directory }}
+#            path: {{ .Values.ceph.storage.osd_directory }}

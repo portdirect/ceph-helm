@@ -1,100 +1,22 @@
 ---
-kind: Deployment
-apiVersion: extensions/v1beta1
-metadata:
-  labels:
-    app: ceph
-    daemon: moncheck
-  name: ceph-mon-check
-spec:
-  replicas: 1
-  template:
-    metadata:
-      name: ceph-mon
-      labels:
-        app: ceph
-        daemon: moncheck
-    spec:
-      serviceAccount: default
-      containers:
-        - name: ceph-mon
-          image: {{ .Values.images.daemon }}
-          imagePullPolicy: Always
-          ports:
-            - containerPort: {{ .Values.network.port.mon }}
-          env:
-            - name: CEPH_DAEMON
-              value: MON_HEALTH
-            - name: KV_TYPE
-              value: k8s
-            - name: MON_IP_AUTO_DETECT
-              value: "1"
-            - name: CLUSTER
-              value: ceph
-          volumeMounts:
-            - name: ceph-conf
-              mountPath: /etc/ceph/ceph.conf
-              subPath: ceph.conf
-              readOnly: true
-            - name: ceph-client-admin-keyring
-              mountPath: /etc/ceph/ceph.client.admin.keyring
-              subPath: ceph.client.admin.keyring
-              readOnly: true
-            - name: ceph-mon-keyring
-              mountPath: /etc/ceph/ceph.mon.keyring
-              subPath: ceph.mon.keyring
-              readOnly: true
-            - name: ceph-bootstrap-osd-keyring
-              mountPath: /var/lib/ceph/bootstrap-osd
-              readOnly: true
-            - name: ceph-bootstrap-mds-keyring
-              mountPath: /var/lib/ceph/bootstrap-mds
-              readOnly: true
-            - name: ceph-bootstrap-rgw-keyring
-              mountPath: /var/lib/ceph/bootstrap-rgw
-              readOnly: true
-          resources:
-            requests:
-              memory: {{ .Values.resources.mon_check.requests.memory | quote }}
-              cpu: {{ .Values.resources.mon_check.requests.cpu | quote }}
-            limits:
-              memory: {{ .Values.resources.mon_check.limits.memory | quote }}
-              cpu: {{ .Values.resources.mon_check.limits.cpu | quote }}
-      volumes:
-        - name: ceph-conf
-          configMap:
-            name: ceph-conf
-        - name: ceph-client-admin-keyring
-          secret:
-            secretName: ceph-client-admin-keyring
-        - name: ceph-mon-keyring
-          secret:
-            secretName: ceph-mon-keyring
-        - name: ceph-bootstrap-osd-keyring
-          secret:
-            secretName: ceph-bootstrap-osd-keyring
-        - name: ceph-bootstrap-mds-keyring
-          secret:
-            secretName: ceph-bootstrap-mds-keyring
-        - name: ceph-bootstrap-rgw-keyring
-          secret:
-            secretName: ceph-bootstrap-rgw-keyring
----
-kind: Deployment
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1beta1
+kind: StatefulSet
 metadata:
   labels:
     app: ceph
     daemon: mon
+    release: {{ .Release.Name }}
   name: ceph-mon
 spec:
-  replicas: 3
+  serviceName: {{ .Values.service.mon.name | quote }}
+  replicas: {{ .Values.resources.mon.replicas }}
   template:
     metadata:
       name: ceph-mon
       labels:
         app: ceph
         daemon: mon
+        release: {{ .Release.Name }}
       annotations:
         scheduler.alpha.kubernetes.io/affinity: >
           {
@@ -114,9 +36,9 @@ spec:
     spec:
       serviceAccount: default
       containers:
-        - name: ceph-mon
+        - name: main
           image: {{ .Values.images.daemon }}
-          imagePullPolicy: Always
+          imagePullPolicy: {{ .Values.image_policy.pull }}
           lifecycle:
             preStop:
                 exec:
@@ -124,7 +46,7 @@ spec:
                   command:
                     - "/remove-mon.sh"
           ports:
-            - containerPort: {{ .Values.network.port.mon }}
+            - containerPort: {{ .Values.service.mon.port }}
           env:
             - name: CEPH_DAEMON
               value: MON
@@ -133,7 +55,7 @@ spec:
             - name: NETWORK_AUTO_DETECT
               value: "1"
             - name: CLUSTER
-              value: ceph
+              value: {{ .Values.ceph.cluster }}
           volumeMounts:
             - name: ceph-conf
               mountPath: /etc/ceph/ceph.conf
@@ -148,22 +70,25 @@ spec:
               subPath: ceph.mon.keyring
               readOnly: true
             - name: ceph-bootstrap-osd-keyring
-              mountPath: /var/lib/ceph/bootstrap-osd
+              mountPath: /var/lib/ceph/bootstrap-osd/ceph.keyring
+              subPath: ceph.keyring
               readOnly: true
             - name: ceph-bootstrap-mds-keyring
-              mountPath: /var/lib/ceph/bootstrap-mds
+              mountPath: /var/lib/ceph/bootstrap-mds/ceph.keyring
+              subPath: ceph.keyring
               readOnly: true
             - name: ceph-bootstrap-rgw-keyring
-              mountPath: /var/lib/ceph/bootstrap-rgw
+              mountPath: /var/lib/ceph/bootstrap-rgw/ceph.keyring
+              subPath: ceph.keyring
               readOnly: true
           livenessProbe:
               tcpSocket:
-                port: {{ .Values.network.port.mon }}
+                port: {{ .Values.service.mon.port }}
               initialDelaySeconds: 60
               timeoutSeconds: 5
           readinessProbe:
               tcpSocket:
-                port: {{ .Values.network.port.mon }}
+                port: {{ .Values.service.mon.port }}
               timeoutSeconds: 5
           resources:
             requests:
