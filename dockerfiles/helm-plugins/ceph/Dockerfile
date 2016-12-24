@@ -13,6 +13,9 @@ RUN set -e && \
         bash \
         util-linux \
         python && \
+    python -m ensurepip && \
+    pip --no-cache-dir install --upgrade pip setuptools && \
+    pip --no-cache-dir install crudini && \
     apk add --no-cache --virtual build-deps \
         curl \
         tar && \

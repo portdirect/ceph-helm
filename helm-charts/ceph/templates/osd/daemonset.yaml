@@ -87,9 +87,9 @@ spec:
           hostPath:
             path: /dev
         - name: ceph
-          emptyDir: {}
-#          hostPath:
-#            path: {{ .Values.ceph.storage.var_directory }}
+          #emptyDir: {}
+          hostPath:
+            path: {{ .Values.ceph.storage.var_directory }}
         - name: ceph-conf
           configMap:
             name: ceph-conf
@@ -109,6 +109,6 @@ spec:
           secret:
             secretName: ceph-bootstrap-rgw-keyring
         - name: osd-directory
-          emptyDir: {}
-#          hostPath:
-#            path: {{ .Values.ceph.storage.osd_directory }}
+          #emptyDir: {}
+          hostPath:
+            path: {{ .Values.ceph.storage.osd_directory }}
