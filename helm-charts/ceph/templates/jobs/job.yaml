@@ -23,11 +23,11 @@ spec:
             - name: CEPH_TEMPLATES_DIR
               value: /opt/ceph/templates
           command:
-            - tail
-            - -f
-            - /dev/null
-            # - bash
-            # - /opt/ceph/ceph-keys.sh
+            # - tail
+            # - -f
+            # - /dev/null
+            - bash
+            - /opt/ceph/ceph-keys.sh
           volumeMounts:
             - name: ceph-key-gen
               mountPath: /opt/ceph/ceph-keys.sh
