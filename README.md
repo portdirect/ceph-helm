@@ -14,20 +14,13 @@ helm repo add marina http://127.0.0.1:8879/charts
 
 helm repo update
 
-#Generate secrets and config for ceph deployment
-#                <ns> <storagecidr> <public cidr>
-#helm ceph secret ceph 10.192.0.0/10 10.192.0.0/10 # Default CIDR Range for Romana CNI Plugin
-helm ceph secret ceph 192.168.0.0/16 192.168.0.0/16 # Default CIDR Range for Calico CNI Plugin
-
 #Label the nodes that will take part in the Ceph cluster
-# 'all' labels all nodes in the cluster bar the k8s controller node(s)
-helm ceph labelnode all
+kubectl get nodes -L kubeadm.alpha.kubernetes.io/role --no-headers | awk '$NF ~ /^<none>/ { print $1}' | while read NODE ; do
+  kubectl label node $NODE --overwrite ceph-storage=enabled
+done
 
 #Deploy ceph to the namespace setup above
-helm install marina/ceph --namespace ceph  --dry-run --debug
-
-#Setup client credentials for a namespace
-helm ceph activate default
+helm install marina/ceph --namespace ceph
 
 ```
 
@@ -37,7 +30,7 @@ helm ceph activate default
 Once Ceph deployment has been performed you can functionally test the environment by running the jobs in the tests directory, these will soon be incorporated into a Helm plugin, but for now you can run:
 
 ```
-kubectl create -R -f tests/ceph
+kubectl create --namespace ceph -R -f tests/ceph
 ```
 
 

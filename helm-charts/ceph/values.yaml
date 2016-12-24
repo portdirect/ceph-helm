@@ -41,8 +41,8 @@ ceph:
       mon_osd_report_timeout: 300
     osd:
       journal_size: 100
-      cluster_network: 10.244.0.0/16
-      public_network: 10.244.0.0/16
+      cluster_network: 10.192.0.0/10
+      public_network: 10.192.0.0/10
       osd_mkfs_type: xfs
       osd_mkfs_options_xfs: -f -i size=2048
       osd_mon_heartbeat_interval: 30

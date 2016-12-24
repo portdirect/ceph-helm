@@ -66,7 +66,7 @@ data:
 
     #ports
     ms_bind_port_min = {{ .Values.ceph.config.osd.ms_bind_port_min | default "6800" | quote }}
-    ms_bind_port_max = {{ .Values.ceph.config.osd.ms_bind_port_min | default "7100" | quote }}
+    ms_bind_port_max = {{ .Values.ceph.config.osd.ms_bind_port_max | default "7100" | quote }}
 
     [client]
     rbd_cache_enabled = {{ .Values.ceph.config.client.rbd_cache_enabled | default "true" | quote }}
