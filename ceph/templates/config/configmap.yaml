@@ -32,22 +32,31 @@ data:
 
 
     [osd]
+    # network
+    cluster_network = {{ .Values.network.cluster | default "10.244.0.0/16" | quote }}
+    public_network = {{ .Values.network.public | default "10.244.0.0/16" | quote }}
+    osd_mon_heartbeat_interval = {{ .Values.ceph.config.osd.osd_mon_heartbeat_interval | default "30" | quote }}
+
+    # ports
+    ms_bind_port_min = {{ .Values.ceph.config.osd.ms_bind_port_min | default "6800" | quote }}
+    ms_bind_port_max = {{ .Values.ceph.config.osd.ms_bind_port_max | default "7100" | quote }}
+
+    # journal
     journal_size = {{ .Values.ceph.config.osd.journal_size | default "100" | quote }}
-    cluster_network = {{ .Values.ceph.config.osd.cluster_network | default "10.244.0.0/16" | quote }}
-    public_network = {{ .Values.ceph.config.osd.public_network | default "10.244.0.0/16" | quote }}
+
+    # filesystem
     osd_mkfs_type = {{ .Values.ceph.config.osd.osd_mkfs_type | default "xfs" | quote }}
     osd_mkfs_options_xfs = {{ .Values.ceph.config.osd.osd_mkfs_options_xfs | default "-f -i size=2048" | quote }}
-    osd_mon_heartbeat_interval = {{ .Values.ceph.config.osd.osd_mon_heartbeat_interval | default "30" | quote }}
     osd_max_object_name_len = {{ .Values.ceph.config.osd.osd_max_object_name_len | default "256" | quote }}
 
-    #crush
+    # crush
     osd_pool_default_crush_rule = {{ .Values.ceph.config.osd.osd_pool_default_crush_rule | default "0" | quote }}
     osd_crush_update_on_start = {{ .Values.ceph.config.osd.osd_crush_update_on_start | default "true" | quote }}
 
-    #backend
+    # backend
     osd_objectstore = {{ .Values.ceph.config.osd.osd_objectstore | default "filestore" | quote }}
 
-    #performance tuning
+    # performance tuning
     filestore_merge_threshold = {{ .Values.ceph.config.osd.filestore_merge_threshold | default "40" | quote }}
     filestore_split_multiple = {{ .Values.ceph.config.osd.filestore_split_multiple | default "8" | quote }}
     osd_op_threads = {{ .Values.ceph.config.osd.osd_op_threads | default "8" | quote }}
@@ -55,18 +64,13 @@ data:
     filestore_max_sync_interval = {{ .Values.ceph.config.osd.filestore_max_sync_interval | default "5" | quote }}
     osd_max_scrubs = {{ .Values.ceph.config.osd.osd_max_scrubs | default "1" | quote }}
 
-
-    #recovery tuning
+    # recovery tuning
     osd_recovery_max_active = {{ .Values.ceph.config.osd.osd_recovery_max_active | default "5" | quote }}
     osd_max_backfills = {{ .Values.ceph.config.osd.osd_max_backfills | default "2" | quote }}
     osd_recovery_op_priority = {{ .Values.ceph.config.osd.osd_recovery_op_priority | default "2" | quote }}
     osd_client_op_priority = {{ .Values.ceph.config.osd.osd_client_op_priority | default "63" | quote }}
     osd_recovery_max_chunk = {{ .Values.ceph.config.osd.osd_client_op_priority | default "osd_recovery_max_chunk" | quote }}
     osd_recovery_threads = {{ .Values.ceph.config.osd.osd_recovery_threads | default "1" | quote }}
-
-    #ports
-    ms_bind_port_min = {{ .Values.ceph.config.osd.ms_bind_port_min | default "6800" | quote }}
-    ms_bind_port_max = {{ .Values.ceph.config.osd.ms_bind_port_max | default "7100" | quote }}
 
     [client]
     rbd_cache_enabled = {{ .Values.ceph.config.client.rbd_cache_enabled | default "true" | quote }}

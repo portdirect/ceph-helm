@@ -46,15 +46,18 @@ data:
     print(base64.b64encode(header + key).decode('ascii'))
   ceph-keys.sh: |
     #!/bin/bash
+    set -e
     function ceph_gen_key () {
       python ${CEPH_GEN_DIR}/ceph-key.py
     }
-
     function kube_ceph_keyring_gen () {
       CEPH_KEY=$1
       CEPH_KEY_TEMPLATE=$2
       sed "s|{{"{{"}} key {{"}}"}}|${CEPH_KEY}|" ${CEPH_TEMPLATES_DIR}/${CEPH_KEY_TEMPLATE} | base64 | tr -d '\n'
     }
+
+    CEPH_CLIENT_KEY=$(ceph_gen_key)
+
 
     function create_kube_key () {
       CEPH_KEYRING=$1
@@ -69,7 +72,7 @@ data:
     apiVersion: v1
     kind: Secret
     metadata:
-      name: "${KUBE_SECRET_NAME}"
+      name: ${KUBE_SECRET_NAME}
     type: Opaque
     data:
       ${CEPH_KEYRING_NAME}: |
@@ -78,13 +81,13 @@ data:
         } | kubectl create --namespace {{ .Release.Namespace }} -f -
       fi
     }
+    #create_kube_key <ceph_key> <ceph_keyring_name> <ceph_keyring_template> <kube_secret_name>
+    create_kube_key ${CEPH_CLIENT_KEY} ceph.client.admin.keyring admin.keyring {{ .Values.secrets.keyrings.admin }}
+    create_kube_key $(ceph_gen_key) ceph.mon.keyring mon.keyring {{ .Values.secrets.keyrings.mon }}
+    create_kube_key $(ceph_gen_key) ceph.keyring bootstrap.keyring.osd {{ .Values.secrets.keyrings.osd }}
+    create_kube_key $(ceph_gen_key) ceph.keyring bootstrap.keyring.mds {{ .Values.secrets.keyrings.mds }}
+    create_kube_key $(ceph_gen_key) ceph.keyring bootstrap.keyring.rgw {{ .Values.secrets.keyrings.rgw }}
 
-    CEPH_CLIENT_KEY=$(ceph_gen_key)
-    create_kube_key ${CEPH_CLIENT_KEY} ceph.client.admin.keyring admin.keyring ceph-client-admin-keyring
-    create_kube_key $(ceph_gen_key) ceph.mon.keyring mon.keyring ceph-mon-keyring
-    for COMPONENT in osd mds rgw; do
-      create_kube_key $(ceph_gen_key) ceph.keyring bootstrap.keyring.${COMPONENT} ceph-bootstrap-${COMPONENT}-keyring
-    done
 
     function create_kube_storage_key () {
       CEPH_KEYRING=$1
@@ -97,7 +100,7 @@ data:
     apiVersion: v1
     kind: Secret
     metadata:
-      name: "${KUBE_SECRET_NAME}"
+      name: ${KUBE_SECRET_NAME}
     type: kubernetes.io/rbd
     data:
       key: |
@@ -106,5 +109,5 @@ data:
         } | kubectl create --namespace {{ .Release.Namespace }} -f -
       fi
     }
-
-    create_kube_storage_key ${CEPH_CLIENT_KEY} pvc-ceph-conf-combined-storageclass
+    #create_kube_storage_key <ceph_key> <kube_secret_name>
+    create_kube_storage_key ${CEPH_CLIENT_KEY} {{ .Values.storageclass.admin_secret_name }}

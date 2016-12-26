@@ -3,6 +3,7 @@ apiVersion: apps/v1beta1
 kind: StatefulSet
 metadata:
   labels:
+    version: v0.1.0
     app: ceph
     daemon: mon
     release: {{ .Release.Name }}
@@ -14,6 +15,7 @@ spec:
     metadata:
       name: ceph-mon
       labels:
+        version: v0.1.0
         app: ceph
         daemon: mon
         release: {{ .Release.Name }}
@@ -42,9 +44,8 @@ spec:
           lifecycle:
             preStop:
                 exec:
-                  # remove the mon on Pod stop.
                   command:
-                    - "/remove-mon.sh"
+                    - /remove-mon.sh
           ports:
             - containerPort: {{ .Values.service.mon.port }}
           env:
@@ -103,16 +104,16 @@ spec:
             name: ceph-conf
         - name: ceph-client-admin-keyring
           secret:
-            secretName: ceph-client-admin-keyring
+            secretName: {{ .Values.secrets.keyrings.admin }}
         - name: ceph-mon-keyring
           secret:
-            secretName: ceph-mon-keyring
+            secretName: {{ .Values.secrets.keyrings.mon }}
         - name: ceph-bootstrap-osd-keyring
           secret:
-            secretName: ceph-bootstrap-osd-keyring
+            secretName: {{ .Values.secrets.keyrings.osd }}
         - name: ceph-bootstrap-mds-keyring
           secret:
-            secretName: ceph-bootstrap-mds-keyring
+            secretName: {{ .Values.secrets.keyrings.mds }}
         - name: ceph-bootstrap-rgw-keyring
           secret:
-            secretName: ceph-bootstrap-rgw-keyring
+            secretName: {{ .Values.secrets.keyrings.rgw }}

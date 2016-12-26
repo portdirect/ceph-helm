@@ -13,6 +13,18 @@ service:
     name: ceph-mon
     port: 6789
 
+network:
+  cluster: 10.192.0.0/10
+  public: 10.192.0.0/10
+
+secrets:
+  keyrings:
+    mon: ceph-mon-keyring
+    mds: ceph-bootstrap-mds-keyring
+    osd: ceph-bootstrap-osd-keyring
+    rgw: ceph-bootstrap-rgw-keyring
+    admin: ceph-client-admin-keyring
+
 ceph:
   cluster: ceph
   storage:
@@ -41,8 +53,6 @@ ceph:
       mon_osd_report_timeout: 300
     osd:
       journal_size: 100
-      cluster_network: 10.192.0.0/10
-      public_network: 10.192.0.0/10
       osd_mkfs_type: xfs
       osd_mkfs_options_xfs: -f -i size=2048
       osd_mon_heartbeat_interval: 30
