@@ -4,12 +4,14 @@ kind: Job
 metadata:
   labels:
     version: v0.1.0
+    test: ceph
   name: ceph-test-job
 spec:
   template:
     metadata:
       labels:
         version: v0.1.0
+        test: ceph
       name: ceph-test-job
     spec:
       restartPolicy: OnFailure
