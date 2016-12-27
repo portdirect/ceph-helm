@@ -5,6 +5,7 @@ metadata:
     version: v0.1.0
     app: ceph
     release: {{ .Release.Name }}
+    daemon: secret-generator
   name: ceph-secret-generator
 spec:
   template:
@@ -13,6 +14,7 @@ spec:
         version: v0.1.0
         app: ceph
         release: {{ .Release.Name }}
+        daemon: secret-generator
       name: ceph-secret-generator
     spec:
       serviceAccount: default
