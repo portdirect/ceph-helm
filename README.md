@@ -14,23 +14,46 @@ helm repo add marina http://127.0.0.1:8879/charts
 
 helm repo update
 
-#Generate secrets and config for ceph deployment
-#                <ns> <storagecidr> <public cidr>
-#helm ceph secret ceph 10.192.0.0/10 10.192.0.0/10 # Default CIDR Range for Romana CNI Plugin
-helm ceph secret ceph 192.168.0.0/16 192.168.0.0/16 # Default CIDR Range for Calico CNI Plugin
-
 #Label the nodes that will take part in the Ceph cluster
-# 'all' labels all nodes in the cluster bar the k8s controller node(s)
-helm ceph labelnode all
+kubectl get nodes -L kubeadm.alpha.kubernetes.io/role --no-headers | awk '$NF ~ /^<none>/ { print $1}' | while read NODE ; do
+  kubectl label node $NODE --overwrite ceph-storage=enabled
+done
 
 #Deploy ceph to the namespace setup above
-helm install marina/ceph --namespace ceph  --dry-run --debug
-
-#Setup client credentials for a namespace
-helm ceph activate default
+helm install marina/ceph --namespace ceph
 
 ```
 
+
+### Namespace Activation
+
+To use Ceph Volumes in a namespace a secret containing the Client Key needs to be present, the bash function below helps create one:
+
+```
+ceph_activate_namespace() {
+  kube_namespace=$1
+  {
+  cat <<EOF
+apiVersion: v1
+kind: Secret
+metadata:
+  name: "pvc-ceph-client-key"
+type: kubernetes.io/rbd
+data:
+  key: |
+    $(kubectl get secret pvc-ceph-conf-combined-storageclass --namespace=ceph -o json | jq -r '.data | .[]')
+EOF
+  } | kubectl create --namespace ${kube_namespace} -f -
+}
+```
+
+Once defined you can then activate Ceph for a namespace by running:
+
+```
+ceph_activate_namespace default
+```
+
+Where `default` is the name of the namespace you wish to use Ceph volumes in.
 
 ### Functional testing
 
